@@ -1,0 +1,137 @@
+:root {
+  --bg: #080808;
+  --card: #111010;
+  --card-2: #171514;
+  --border: #241f1b;
+  --accent: #E8793C;   /* amber */
+  --accent-2: #9B7FE8; /* purple (cost gauge) */
+  --text: #F2EDE8;
+  --muted: #8a817760;
+  --muted-solid: #8a8177;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding: 28px 24px 40px;
+  min-height: 100vh;
+}
+
+.wrap { max-width: 880px; margin: 0 auto; }
+
+/* header */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.flame {
+  width: 16px; height: 20px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: linear-gradient(180deg, #fde047, var(--accent));
+  box-shadow: 0 0 16px rgba(232, 121, 60, 0.6);
+}
+.brand h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; }
+.brand span { color: var(--muted-solid); font-size: 13px; font-weight: 400; }
+
+.live {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 600; color: var(--muted-solid);
+}
+.live .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted-solid);
+}
+.live.connected { color: var(--accent); }
+.live.connected .dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* stat cards */
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 18px 20px;
+}
+.card .label {
+  font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase;
+  color: var(--muted-solid); line-height: 1.4;
+}
+.card .big {
+  font-size: 34px; font-weight: 800; margin-top: 14px; line-height: 1;
+  letter-spacing: -1px;
+}
+.card .big.amber { color: var(--accent); }
+.card .sub { font-size: 13px; color: var(--muted-solid); margin-top: 6px; }
+
+/* gauges */
+.gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.gauge-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex; align-items: center; gap: 18px;
+}
+.gauge-wrap { position: relative; width: 104px; height: 104px; flex: 0 0 auto; }
+.gauge-wrap svg { transform: rotate(-90deg); display: block; }
+.gauge-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.gauge-center .pct { font-size: 24px; font-weight: 800; letter-spacing: -1px; }
+.gauge-center .cap { font-size: 10px; color: var(--muted-solid); text-transform: uppercase; letter-spacing: 0.5px; }
+.gauge-meta .g-title {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px;
+  color: var(--muted-solid); margin-bottom: 6px;
+}
+.gauge-meta .g-value { font-size: 20px; font-weight: 700; }
+.gauge-meta .g-note { font-size: 12px; color: var(--muted-solid); margin-top: 4px; }
+
+.track { fill: none; stroke: #241f1b; stroke-width: 9; }
+.arc {
+  fill: none; stroke-width: 9; stroke-linecap: round;
+  stroke-dasharray: 238.76; stroke-dashoffset: 238.76;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.arc.amber { stroke: var(--accent); }
+.arc.purple { stroke: var(--accent-2); }
+
+/* table */
+.table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.table-card h2 {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px;
+  color: var(--muted-solid); padding: 16px 18px 10px; font-weight: 600;
+}
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td {
+  text-align: right; padding: 9px 14px; font-size: 13px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+th {
+  color: var(--muted-solid); font-weight: 500; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.4px;
+  border-bottom: 1px solid var(--border);
+}
+th:first-child, td:first-child { text-align: left; }
+tbody tr { border-bottom: 1px solid #1a1614; }
+tbody tr:last-child { border-bottom: none; }
+td.amber { color: var(--accent); }
+.empty { padding: 26px; text-align: center; color: var(--muted-solid); font-size: 13px; }

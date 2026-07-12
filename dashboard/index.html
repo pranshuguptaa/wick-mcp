@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wick MCP — live token tracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <span class="flame"></span>
+        <h1>Wick <span>· token tracker</span></h1>
+      </div>
+      <div class="live" id="live">
+        <span class="dot"></span>
+        <span id="live-text">connecting…</span>
+      </div>
+    </header>
+
+    <!-- TOP: three stat cards -->
+    <section class="cards">
+      <div class="card">
+        <div class="label">Messages<br>left</div>
+        <div class="big amber" id="msgs-left">—</div>
+        <div class="sub" id="msgs-model">—</div>
+      </div>
+      <div class="card">
+        <div class="label">Cost<br>this session</div>
+        <div class="big" id="cost-inr">₹0.00</div>
+        <div class="sub" id="cost-usd">$0.0000</div>
+      </div>
+      <div class="card">
+        <div class="label">Tokens<br>this session</div>
+        <div class="big" id="tokens">0</div>
+        <div class="sub">total in + out</div>
+      </div>
+    </section>
+
+    <!-- MIDDLE: two arc gauges -->
+    <section class="gauges">
+      <div class="gauge-card">
+        <div class="gauge-wrap">
+          <svg width="104" height="104" viewBox="0 0 100 100">
+            <circle class="track" cx="50" cy="50" r="38" />
+            <circle class="arc amber" id="gauge-session" cx="50" cy="50" r="38" />
+          </svg>
+          <div class="gauge-center">
+            <div class="pct" id="gauge-session-pct">0%</div>
+            <div class="cap">5h</div>
+          </div>
+        </div>
+        <div class="gauge-meta">
+          <div class="g-title">Session usage</div>
+          <div class="g-value" id="gauge-session-val">0%</div>
+          <div class="g-note">of estimated 5-hour window</div>
+        </div>
+      </div>
+
+      <div class="gauge-card">
+        <div class="gauge-wrap">
+          <svg width="104" height="104" viewBox="0 0 100 100">
+            <circle class="track" cx="50" cy="50" r="38" />
+            <circle class="arc purple" id="gauge-cost" cx="50" cy="50" r="38" />
+          </svg>
+          <div class="gauge-center">
+            <div class="pct" id="gauge-cost-pct">0%</div>
+            <div class="cap">budget</div>
+          </div>
+        </div>
+        <div class="gauge-meta">
+          <div class="g-title">Daily budget</div>
+          <div class="g-value" id="gauge-cost-val">$0.00</div>
+          <div class="g-note">of $5.00/day</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOTTOM: turn history -->
+    <section class="table-card">
+      <h2>Turn history · last 20</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Turn</th><th>Tokens</th><th>Cost USD</th>
+            <th>Cost INR</th><th>Cache</th><th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr><td class="empty" colspan="6">Waiting for the first tracked turn…</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const WS_URL = 'ws://localhost:6790';
+    const DAILY_BUDGET = 5; // USD
+    const CIRC = 2 * Math.PI * 38; // 238.76
+    const $ = (id) => document.getElementById(id);
+
+    // ---- number tween --------------------------------------------------
+    const tweens = {};
+    function tweenNumber(el, to, fmt) {
+      const key = el.id;
+      const from = tweens[key] ?? to;
+      const start = performance.now();
+      const dur = 500;
+      cancelAnimationFrame(el._raf);
+      function step(t) {
+        const p = Math.min(1, (t - start) / dur);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const v = from + (to - from) * eased;
+        el.textContent = fmt(v);
+        if (p < 1) el._raf = requestAnimationFrame(step);
+        else tweens[key] = to;
+      }
+      el._raf = requestAnimationFrame(step);
+      tweens[key] = to;
+    }
+    const asInt = (v) => Math.round(v).toLocaleString('en-US');
+    const asUSD = (v) => '$' + v.toFixed(v < 1 ? 4 : 2);
+    const asINR = (v) => '₹' + v.toFixed(2);
+
+    function setGauge(id, frac, color) {
+      const f = Math.max(0, Math.min(1, frac || 0));
+      const arc = $(id);
+      if (arc) {
+        arc.style.strokeDashoffset = String(CIRC * (1 - f));
+        if (color) arc.style.stroke = color;
+      }
+    }
+
+    // ---- render --------------------------------------------------------
+    function render(s) {
+      if (!s || !s.totals) return;
+      const est = s.estimates || {};
+      const t = s.totals;
+
+      tweenNumber($('msgs-left'), est.messagesLeft ?? 0, (v) => '≈ ' + asInt(v));
+      $('msgs-model').textContent = s.modelLabel || '—';
+
+      tweenNumber($('cost-inr'), t.totalCostINR || 0, asINR);
+      tweenNumber($('cost-usd'), t.totalCostUSD || 0, asUSD);
+      tweenNumber($('tokens'), t.totalTokens || 0, asInt);
+
+      // session gauge
+      const sf = est.sessionFraction || 0;
+      setGauge('gauge-session', sf);
+      $('gauge-session-pct').textContent = Math.round(sf * 100) + '%';
+      $('gauge-session-val').textContent = Math.round(sf * 100) + '%';
+
+      // cost gauge
+      const cf = Math.min(1, (t.totalCostUSD || 0) / DAILY_BUDGET);
+      setGauge('gauge-cost', cf);
+      $('gauge-cost-pct').textContent = Math.round(cf * 100) + '%';
+      $('gauge-cost-val').textContent = asUSD(t.totalCostUSD || 0);
+
+      // table (last 20, newest first)
+      const turns = (s.turns || []).slice(-20).reverse();
+      const tbody = $('rows');
+      if (!turns.length) {
+        tbody.innerHTML = '<tr><td class="empty" colspan="6">Waiting for the first tracked turn…</td></tr>';
+        return;
+      }
+      tbody.innerHTML = turns.map((x) => {
+        const tok = (x.inputTokens || 0) + (x.outputTokens || 0);
+        const time = new Date(x.timestamp).toLocaleTimeString('en-US', { hour12: false });
+        return `<tr>
+          <td>${x.turnNumber}</td>
+          <td>${asInt(tok)}</td>
+          <td class="amber">${asUSD(x.costUSD || 0)}</td>
+          <td>${asINR(x.costINR || 0)}</td>
+          <td>${asInt(x.cacheReadTokens || 0)}</td>
+          <td>${time}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ---- connection ----------------------------------------------------
+    function setLive(connected) {
+      const el = $('live');
+      el.classList.toggle('connected', connected);
+      $('live-text').textContent = connected ? 'LIVE' : 'reconnecting…';
+      el.querySelector('.dot').textContent = '';
+    }
+
+    let ws;
+    function connect() {
+      try { ws = new WebSocket(WS_URL); } catch (_e) { return retry(); }
+      ws.onopen = () => setLive(true);
+      ws.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          if (msg.data) render(msg.data);
+        } catch (_e) {}
+      };
+      ws.onclose = () => { setLive(false); retry(); };
+      ws.onerror = () => { try { ws.close(); } catch (_e) {} };
+    }
+    let retryTimer;
+    function retry() {
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(connect, 3000);
+    }
+
+    // initial state via HTTP, then live via WS
+    fetch('/api/status').then((r) => r.json()).then(render).catch(() => {});
+    connect();
+  </script>
+</body>
+</html>
