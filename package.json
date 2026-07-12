@@ -1,10 +1,16 @@
 {
-  "name": "wick-mcp",
+  "name": "usewick-mcp",
   "version": "1.0.0",
   "description": "Local MCP server — live Claude token tracking for Desktop, Code, and CLI",
   "homepage": "https://usewick.online",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pranshuguptaa/wick-mcp.git"
+  },
   "type": "module",
-  "bin": { "wick-mcp": "./server.js" },
+  "bin": {
+    "usewick-mcp": "server.js"
+  },
   "scripts": {
     "start": "node server.js",
     "install-desktop": "node install.js"

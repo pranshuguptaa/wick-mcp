@@ -23,14 +23,24 @@ Code watcher on boot — so for coding sessions, **it just works**.
 
 ## Install in 30 seconds
 
+One command — installs from npm and patches your Claude Desktop config automatically:
+
+```bash
+npx usewick-mcp install
+```
+
+Then restart Claude Desktop.
+
+<details>
+<summary>Or install from source</summary>
+
 ```bash
 git clone https://github.com/pranshuguptaa/wick-mcp
 cd wick-mcp
 npm install
 npm run install-desktop
 ```
-
-Then restart Claude Desktop.
+</details>
 
 ## Verify it's working
 
