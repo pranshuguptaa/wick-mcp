@@ -1,6 +1,6 @@
 {
   "name": "usewick-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Local MCP server — live Claude token tracking for Desktop, Code, and CLI",
   "homepage": "https://usewick.online",
   "repository": {

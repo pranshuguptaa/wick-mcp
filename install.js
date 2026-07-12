@@ -15,6 +15,17 @@ import chalk from 'chalk';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SERVER_PATH = path.join(__dirname, 'server.js');
 
+// How Claude Desktop should launch Wick:
+//  - Installed from npm (this file runs from inside node_modules / the npx
+//    cache): use `npx -y usewick-mcp`, so the config never points at a path
+//    that npm/npx can garbage-collect, and it always runs the published build.
+//  - Running from a source checkout: point straight at the local server.js
+//    (a stable absolute path, ideal for development).
+const IS_PACKAGED = __dirname.includes(`${path.sep}node_modules${path.sep}`);
+const SERVER_ENTRY = IS_PACKAGED
+  ? { command: 'npx', args: ['-y', 'usewick-mcp'] }
+  : { command: 'node', args: [SERVER_PATH] };
+
 function configPath() {
   const home = os.homedir();
   switch (process.platform) {
@@ -68,13 +79,12 @@ async function main() {
 
   // 2. overwrite guard
   if (config.mcpServers.wick) {
-    const existing = config.mcpServers.wick.args?.[0];
-    if (existing === SERVER_PATH) {
-      console.error(chalk.green('\n✓ Wick is already installed and points here. Nothing to do.'));
+    if (JSON.stringify(config.mcpServers.wick) === JSON.stringify(SERVER_ENTRY)) {
+      console.error(chalk.green('\n✓ Wick is already installed and up to date. Nothing to do.'));
       printNext(cfgPath);
       return;
     }
-    const answer = (await ask(chalk.yellow('\nAn "wick" MCP entry already exists. Overwrite it? (y/N) '))).trim().toLowerCase();
+    const answer = (await ask(chalk.yellow('\nA "wick" MCP entry already exists. Overwrite it? (y/N) '))).trim().toLowerCase();
     if (answer !== 'y' && answer !== 'yes') {
       console.error(chalk.gray('Aborted — no changes made.'));
       return;
@@ -82,7 +92,7 @@ async function main() {
   }
 
   // 3. write entry
-  config.mcpServers.wick = { command: 'node', args: [SERVER_PATH] };
+  config.mcpServers.wick = SERVER_ENTRY;
 
   fs.mkdirSync(path.dirname(cfgPath), { recursive: true });
   fs.writeFileSync(cfgPath, JSON.stringify(config, null, 2));
